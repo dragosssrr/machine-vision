@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Import utilities and temporal filters directly from mvlib.py
-from mvlib import (
+from machine_vision.mvlib import (
     AlphaBetaSO3,
     ConstantVelocityKalman,
     MarkerDetector,
