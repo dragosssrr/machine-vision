@@ -5,8 +5,8 @@ import cv2
 # ==============================================================================
 # TARGET & CALIBRATION CONFIGURATION (Derived from make_calibration.py)
 # ==============================================================================
-NX, NY = 7, 5        # Inner corners count (7 horizontal x 5 vertical)
-SQ = 0.030           # Square side length in meters (30 mm)
+NX, NY = 6, 9        # Inner corners count (7 horizontal x 5 vertical)
+SQ = 0.025           # Square side length in meters (30 mm)
 
 # Centered 3D object points in target coordinate frame (matching source definition)
 OBJ = np.array(
