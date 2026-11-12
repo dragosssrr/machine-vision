@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 from pathlib import Path
 
-WEIGHTS_DIR = Path(__file__).resolve().parent / "data"
+WEIGHTS_FILE = Path(__file__).resolve().parent / "machine_vision" / "data" / "cnn_params.npz" # change to path for cnn_params.npz
 
 class ConvNet(nn.Module):
     def __init__(self, num_classes=10):
@@ -35,29 +35,21 @@ class ConvNet(nn.Module):
         x = self.task5_head(x)
         return x
 
-def load_weights_into_pytorch(model,weights_dir=WEIGHTS_DIR):
-    # Mapping Conv layers (PyTorch indexing)
-    conv_indices = [0, 2, 5, 7, 10, 12]
-    
-    for idx, name in zip(conv_indices, ['c0', 'c1', 'c2', 'c3', 'c4', 'c5']):
-        w_path = weights_dir / f"{name}w.npy"
-        b_path = weights_dir / f"{name}b.npy"
-        
-        w = np.load(w_path)
-        b = np.load(b_path)
-        
-        w_pt = torch.tensor(w).permute(3, 2, 0, 1)
-        b_pt = torch.tensor(b)
-        
-        model.features[idx].weight.data.copy_(w_pt)
-        model.features[idx].bias.data.copy_(b_pt)
+def load_weights_into_pytorch(model, weights_file=WEIGHTS_FILE):
+    params = np.load(weights_file)  
+    print(params.files)
 
-    # Load Dense layer d0
-    d0_w = np.load(weights_dir / "d0w.npy")
-    d0_b = np.load(weights_dir / "d0b.npy")
-    
-    model.d0.weight.data.copy_(torch.tensor(d0_w).T)
-    model.d0.bias.data.copy_(torch.tensor(d0_b))
+    conv_indices = [0, 2, 5, 7, 10, 12]
+    for idx, name in zip(conv_indices, ["c0", "c1", "c2", "c3", "c4", "c5"]):
+        w = torch.from_numpy(params[f"{name}w"]).float().permute(3, 2, 0, 1)
+        b = torch.from_numpy(params[f"{name}b"]).float()
+        model.features[idx].weight.data.copy_(w)
+        model.features[idx].bias.data.copy_(b)
+
+    d0_w = torch.from_numpy(params["d0w"]).float()
+    d0_b = torch.from_numpy(params["d0b"]).float()
+    model.d0.weight.data.copy_(d0_w.T)
+    model.d0.bias.data.copy_(d0_b)
 
 # Initialize and load
 model = ConvNet(num_classes=10)
