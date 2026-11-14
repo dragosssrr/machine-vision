@@ -1,0 +1,20 @@
+{
+ "dictionary": "DICT_4X4_50",
+ "ids": {
+  "F": 10,
+  "M": 22
+ },
+ "quiet_zone_cells": 1,
+ "design_side_mm": 100.0,
+ "measured_side_mm": {
+  "F": null,
+  "M": null
+ },
+ "png_dpi": 600,
+ "png_side_mm": {
+  "F": 100.076,
+  "M": 100.076
+ },
+ "note": "side = black square of the marker, quiet zone not included",
+ "updated_at": "2026-11-14T11:24:58"
+}

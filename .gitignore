@@ -1,0 +1,8 @@
+data/
+results/cache/
+*.pt
+__pycache__/
+.venv/
+*.mp4
+.DS_Store
+docs/STEP_BY_STEP.md

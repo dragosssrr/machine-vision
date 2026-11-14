@@ -12,10 +12,11 @@ dependencies = [
     "numpy (>=2.4)",
     "matplotlib (>=3.11)",
     "torch (>=2.15)",
+    "torchvision (>=0.29)",
 ]
 
 [tool.poetry]
-packages = [{include = "machine_vision", from = "src"}]
+package-mode = false
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

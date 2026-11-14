@@ -1,12 +1,24 @@
+"""calibrate_camera.py -- T3 step 1: intrinsic calibration of the webcam from live chessboard views.
+
+    python calibrate_camera.py
+
+Opens the camera at 1280x720 (every other script uses this size), press c to capture a view, q to calibrate.
+Writes calibration_output.npz (K, dist, rms) + calibration_output.json (image size, per-view errors), and the
+captured views to data/calibration_images/ so the per-view errors can be checked again later.
+"""
 import json
 import numpy as np
 import cv2
 
+from config import CALIB_IMAGES
+
+WIDTH, HEIGHT = 1280, 720   # resolution to calibrate at; every script then opens the camera at this size
+
 # ==============================================================================
 # TARGET & CALIBRATION CONFIGURATION (Derived from make_calibration.py)
 # ==============================================================================
-NX, NY = 6, 9        # Inner corners count (7 horizontal x 5 vertical)
-SQ = 0.025           # Square side length in meters (30 mm)
+NX, NY = 6, 9        # Inner corners count (6 x 9)
+SQ = 0.025           # Square side length in meters (25 mm, measured on the print)
 
 # Centered 3D object points in target coordinate frame (matching source definition)
 OBJ = np.array(
@@ -41,13 +53,15 @@ def calibrate_from_webcam(
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
         raise RuntimeError(f"Cannot open camera at index {camera_index}")
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
 
     object_points = []
     image_points = []
     captured_count = 0
 
     print("==================================================")
-    print("      LIVE CAMERA CALIBRATION (9x6, 30mm)         ")
+    print(f"   LIVE CAMERA CALIBRATION ({NX}x{NY}, {SQ * 1000:.0f} mm)   ")
     print("==================================================")
     print("Press 'c' to capture a frame when chessboard is highlighted.")
     print(f"Press 'q' to stop capturing and run calibration (min {min_views} views).")
@@ -63,6 +77,8 @@ def calibrate_from_webcam(
 
         if frame_size is None:
             frame_size = (frame.shape[1], frame.shape[0])  # (W, H)
+            if frame_size != (WIDTH, HEIGHT):
+                raise RuntimeError(f"camera gives {frame_size[0]}x{frame_size[1]}, not {WIDTH}x{HEIGHT}")
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         found, corners = cv2.findChessboardCorners(gray, (NX, NY), None)
@@ -103,8 +119,13 @@ def calibrate_from_webcam(
                 corners_refined = cv2.cornerSubPix(
                     gray, corners, (11, 11), (-1, -1), SUBPIX_CRITERIA
                 )
+                if captured_count == 0:          # a new calibration: old views belong to the old one
+                    CALIB_IMAGES.mkdir(parents=True, exist_ok=True)
+                    for old in CALIB_IMAGES.glob("view_*.png"):
+                        old.unlink()
                 object_points.append(OBJ)
                 image_points.append(corners_refined)
+                cv2.imwrite(str(CALIB_IMAGES / f"view_{captured_count:02d}.png"), frame)
                 captured_count += 1
                 print(f"[+] Captured view #{captured_count}")
             else:
@@ -136,6 +157,11 @@ def calibrate_from_webcam(
     print(f"Focal Lengths (fx, fy) : ({K_est[0,0]:.2f}, {K_est[1,1]:.2f})")
     print(f"Principal Point (cx,cy): ({K_est[0,2]:.2f}, {K_est[1,2]:.2f})")
     print(f"Distortion Coefficients: {dist_est.ravel()}")
+    per_view = []
+    for obj, img, rv, tv in zip(object_points, image_points, rvecs, tvecs):
+        proj, _ = cv2.projectPoints(obj, rv, tv, K_est, dist_est)
+        per_view.append(float(np.sqrt(np.mean(np.sum((proj - img).reshape(-1, 2) ** 2, axis=1)))))
+    print("Per-view RMS [px]      : " + " ".join(f"{e:.2f}" for e in per_view))
     print("======================================================")
 
     # Export results
@@ -147,6 +173,10 @@ def calibrate_from_webcam(
         "rms": float(rms),
         "K": K_est.tolist(),
         "dist": dist_est.ravel().tolist(),
+        "board_inner_corners": [NX, NY],
+        "square_m": SQ,
+        "per_view_rms": per_view,
+        "views": [f"view_{i:02d}.png" for i in range(captured_count)],
     }
     with open("calibration_output.json", "w") as f:
         json.dump(results_json, f, indent=2)
