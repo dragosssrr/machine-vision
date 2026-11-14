@@ -2,7 +2,6 @@
 
 Every number in the report can be reproduced with the commands below, run from the repository root.
 Seeds are fixed (`config.SEED = 0`; renderer seeds 0 / 2 / 1 for train / validation / test).
-A beginner-level explanation of T5 and T6 is in [`docs/T5_T6_GUIDE.md`](docs/T5_T6_GUIDE.md).
 
 ## Set-up
 ```
